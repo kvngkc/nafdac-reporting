@@ -1,0 +1,133 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Category {
+  FAKE_COUNTERFEIT
+  UNREGISTERED
+  EXPIRED
+  TOXIC_CONTAMINATED
+  ILLEGAL_BANNED
+  MISLABELED
+  OTHER
+}
+
+enum ProductType {
+  FOOD
+  DRUG
+  COSMETIC
+  WATER_BEVERAGE
+  MEDICAL_DEVICE
+  CHEMICAL
+  OTHER
+}
+
+enum Severity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum Status {
+  NEW
+  UNDER_REVIEW
+  FORWARDED
+  RESOLVED
+  DISMISSED
+}
+
+enum Role {
+  ADMIN
+  ANALYST
+}
+
+model Complaint {
+  id                    String      @id @default(cuid())
+  trackingCode          String      @unique
+  category              Category
+  productType           ProductType
+  productName           String
+  productNameNormalized String
+  // Grouping key: "reg:<regNo>" when a NAFDAC number was given, else "name:<name>|<brand>"
+  productKey            String
+  brand                 String?
+  manufacturer          String?
+  nafdacRegNo           String?
+  batchNo               String?
+  expiryDate            DateTime?
+  state                 String
+  lga                   String
+  purchaseLocation      String?
+  purchaseDate          DateTime?
+  description           String
+  healthEffect          Boolean     @default(false)
+  healthEffectDetails   String?
+  hospitalized          Boolean     @default(false)
+  severity              Severity
+  status                Status      @default(NEW)
+  contactName           String?
+  contactPhone          String?
+  contactEmail          String?
+  ipHash                String?
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+
+  evidence      Evidence[]
+  statusChanges StatusChange[]
+
+  @@index([createdAt])
+  @@index([category])
+  @@index([productType])
+  @@index([state])
+  @@index([status])
+  @@index([severity])
+  @@index([productKey, createdAt])
+}
+
+model Evidence {
+  id          String    @id @default(cuid())
+  complaintId String
+  complaint   Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  storageKey  String
+  mimeType    String
+  size        Int
+  createdAt   DateTime  @default(now())
+}
+
+model AdminUser {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  name          String
+  passwordHash  String
+  role          Role           @default(ANALYST)
+  createdAt     DateTime       @default(now())
+  statusChanges StatusChange[]
+}
+
+model StatusChange {
+  id          String     @id @default(cuid())
+  complaintId String
+  complaint   Complaint  @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  from        Status
+  to          Status
+  note        String?
+  adminId     String?
+  admin       AdminUser? @relation(fields: [adminId], references: [id], onDelete: SetNull)
+  createdAt   DateTime   @default(now())
+
+  @@index([complaintId])
+}
+
+model RateLimit {
+  key         String
+  windowStart DateTime
+  count       Int      @default(0)
+
+  @@id([key, windowStart])
+}
