@@ -25,6 +25,29 @@ const STEPS = [
 
 const today = () => new Date().toISOString().slice(0, 10);
 
+const MAX_PHOTO_SIDE = 1600;
+
+/**
+ * Downscales a photo in the browser and re-encodes it as JPEG, so uploads stay small on mobile data and
+ * under the hosting request-size limit. The server still validates and re-encodes every image.
+ */
+async function shrinkImage(file: File): Promise<File> {
+  try {
+    const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
+    const scale = Math.min(1, MAX_PHOTO_SIDE / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    canvas.getContext("2d")!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close();
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.82));
+    if (!blob || blob.size >= file.size) return file;
+    return new File([blob], file.name.replace(/\.\w+$/, "") + ".jpg", { type: "image/jpeg" });
+  } catch {
+    return file;
+  }
+}
+
 export function ReportForm({ turnstileSiteKey }: { turnstileSiteKey?: string }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
@@ -67,17 +90,22 @@ export function ReportForm({ turnstileSiteKey }: { turnstileSiteKey?: string }) 
     if (!hasErrors(validate(STEPS[step].fields))) goTo(step + 1);
   }
 
-  function addFiles(list: FileList | null) {
+  async function addFiles(list: FileList | null) {
     if (!list) return;
     const incoming = [...list];
-    const bad = incoming.find((f) => !(UPLOADS.allowedMime as readonly string[]).includes(f.type) || f.size > UPLOADS.maxBytes);
-    if (bad) {
-      setErrors((e) => ({ ...e, evidence: `"${bad.name}" must be a JPG, PNG or WebP image under 5 MB` }));
+    const wrongType = incoming.find((f) => !(UPLOADS.allowedMime as readonly string[]).includes(f.type));
+    if (wrongType) {
+      setErrors((e) => ({ ...e, evidence: `"${wrongType.name}" must be a JPG, PNG or WebP image` }));
       return;
     }
-    const merged = [...files, ...incoming].slice(0, UPLOADS.maxFiles);
+    const shrunk = await Promise.all(incoming.map(shrinkImage));
+    const tooBig = shrunk.find((f) => f.size > UPLOADS.maxBytes);
+    if (tooBig) {
+      setErrors((e) => ({ ...e, evidence: `"${tooBig.name}" is larger than 5 MB` }));
+      return;
+    }
     setErrors((e) => ({ ...e, evidence: undefined }));
-    setFiles(merged);
+    setFiles((prev) => [...prev, ...shrunk].slice(0, UPLOADS.maxFiles));
   }
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {

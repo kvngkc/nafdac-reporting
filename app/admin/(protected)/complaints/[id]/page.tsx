@@ -11,7 +11,7 @@ export default async function ComplaintDetail({ params }: { params: Promise<{ id
   const c = await prisma.complaint.findUnique({
     where: { id },
     include: {
-      evidence: { orderBy: { createdAt: "asc" } },
+      evidence: { orderBy: { createdAt: "asc" }, select: { id: true } },
       statusChanges: { orderBy: { createdAt: "desc" }, include: { admin: { select: { name: true } } } },
     },
   });

@@ -10,7 +10,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const ev = await prisma.evidence.findUnique({ where: { id } });
   if (!ev) return new NextResponse("Not found", { status: 404 });
   try {
-    const data = await readEvidence(ev.storageKey);
+    const data = await readEvidence(ev);
     return new NextResponse(new Uint8Array(data), {
       headers: {
         "Content-Type": ev.mimeType,

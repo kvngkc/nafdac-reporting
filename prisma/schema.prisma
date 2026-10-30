@@ -3,8 +3,10 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // Direct (non-pooled) connection used by migrations; Neon sets this automatically.
+  directUrl = env("DATABASE_URL_UNPOOLED")
 }
 
 enum Category {
@@ -95,6 +97,8 @@ model Evidence {
   complaintId String
   complaint   Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
   storageKey  String
+  // Image bytes when STORAGE_DRIVER=db; null for local/S3 storage.
+  data        Bytes?
   mimeType    String
   size        Int
   createdAt   DateTime  @default(now())

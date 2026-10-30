@@ -25,13 +25,15 @@ function s3Client() {
   return s3;
 }
 
-const isS3 = () => process.env.STORAGE_DRIVER === "s3";
+const driver = () => process.env.STORAGE_DRIVER ?? "local";
+
+export type StoredEvidence = { storageKey: string; mimeType: AllowedMime; size: number; data?: Uint8Array<ArrayBuffer> };
 
 /**
  * Validates an uploaded image by decoding it (not trusting the browser's MIME type),
  * re-encodes it which drops EXIF/GPS metadata, and stores it under a random key.
  */
-export async function storeEvidence(file: File): Promise<{ storageKey: string; mimeType: AllowedMime; size: number }> {
+export async function storeEvidence(file: File): Promise<StoredEvidence> {
   if (file.size > UPLOADS.maxBytes) throw new UploadError(`"${file.name}" is larger than 5 MB`);
   const input = Buffer.from(await file.arrayBuffer());
 
@@ -56,7 +58,11 @@ export async function storeEvidence(file: File): Promise<{ storageKey: string; m
   const ext = format === "jpeg" ? "jpg" : format;
   const storageKey = `evidence/${randomUUID()}.${ext}`;
 
-  if (isS3()) {
+  if (driver() === "db") {
+    // Bytes are saved with the Evidence row by the caller.
+    return { storageKey, mimeType, size: output.length, data: new Uint8Array(output) };
+  }
+  if (driver() === "s3") {
     await s3Client().send(
       new PutObjectCommand({ Bucket: process.env.S3_BUCKET, Key: storageKey, Body: output, ContentType: mimeType }),
     );
@@ -68,9 +74,10 @@ export async function storeEvidence(file: File): Promise<{ storageKey: string; m
   return { storageKey, mimeType, size: output.length };
 }
 
-export async function readEvidence(storageKey: string): Promise<Buffer> {
+export async function readEvidence({ storageKey, data }: { storageKey: string; data: Uint8Array | null }): Promise<Buffer> {
+  if (data) return Buffer.from(data);
   if (!/^evidence\/[0-9a-f-]+\.(jpg|png|webp)$/.test(storageKey)) throw new Error("Bad storage key");
-  if (isS3()) {
+  if (driver() === "s3") {
     const res = await s3Client().send(new GetObjectCommand({ Bucket: process.env.S3_BUCKET, Key: storageKey }));
     return Buffer.from(await res.Body!.transformToByteArray());
   }

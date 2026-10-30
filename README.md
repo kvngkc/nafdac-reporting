@@ -53,11 +53,22 @@ npm run build && npm run test:e2e   # end-to-end: report → track → admin log
 
 ## Deploying
 
-- Any Node host works (e.g. Vercel + Neon/Supabase Postgres). Run `npx prisma migrate deploy` on release.
-- Set `STORAGE_DRIVER=s3` and the `S3_*` variables for photo storage (AWS S3, Cloudflare R2, etc.) — local disk
-  storage is for development only.
+**Vercel + Neon (simplest)**
+1. Import the repo into Vercel (framework: Next.js).
+2. In the project, open **Storage → Create Database → Neon** and connect it. This sets `DATABASE_URL` and
+   `DATABASE_URL_UNPOOLED`.
+3. Set the environment variables: `AUTH_SECRET`, `AUTH_TRUST_HOST=true`, `IP_HASH_SALT`, `STORAGE_DRIVER=db`,
+   `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD` (and `SEED_DEMO_DATA=true` only for a demo).
+4. Deploy. The `vercel-build` script runs `prisma migrate deploy` and the (idempotent) seed before `next build`.
+
+Notes:
+- `STORAGE_DRIVER=db` keeps evidence photos in Postgres, which is fine for pilots. For larger volumes use
+  `STORAGE_DRIVER=s3` with the `S3_*` variables (AWS S3, Cloudflare R2, etc.). `local` is for development only.
+- Photos are downscaled in the browser before upload so 4 photos fit within Vercel's 4.5 MB request limit.
+- `vercel.json` pins functions to Frankfurt (`fra1`), the closest Vercel region to Nigeria; create the database
+  in an EU region too.
 - Set `NEXT_PUBLIC_TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET_KEY` to enable the CAPTCHA.
-- Never set `SEED_DEMO_DATA=true` in production.
+- Set `SEED_DEMO_DATA=false` (or remove it) before real use.
 
 ## Project layout
 
