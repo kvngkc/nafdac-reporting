@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { NafdacContacts } from "@/components/NafdacContacts";
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -31,13 +32,10 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
             This is an independent citizen reporting platform. Reports are reviewed and aggregated before being shared
             with the National Agency for Food and Drug Administration and Control (NAFDAC).
           </p>
-          <p>
-            You can also contact NAFDAC directly through the official channels listed at{" "}
-            <a className="text-brand-700 underline" href="https://www.nafdac.gov.ng" target="_blank" rel="noreferrer">
-              nafdac.gov.ng
-            </a>
-            .
-          </p>
+          <div>
+            <p className="mb-1.5 font-semibold text-slate-700">Contact NAFDAC directly</p>
+            <NafdacContacts />
+          </div>
         </div>
       </footer>
     </div>

@@ -13,7 +13,7 @@ export function Field({
   label: string;
   htmlFor: string;
   error?: string;
-  hint?: string;
+  hint?: React.ReactNode;
   optional?: boolean;
   children: React.ReactNode;
 }) {

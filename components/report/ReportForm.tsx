@@ -10,6 +10,7 @@ import { CATEGORY_HINTS, CATEGORY_LABELS, PRODUCT_TYPE_LABELS } from "@/lib/labe
 import { STATES, STATES_LGAS } from "@/lib/nigeria";
 import { complaintSchema } from "@/lib/validation/complaint";
 import { UPLOADS } from "@/lib/config";
+import { NAFDAC } from "@/lib/nafdac";
 import { submitComplaint } from "@/app/(public)/report/actions";
 
 type Errors = Record<string, string | undefined>;
@@ -195,7 +196,19 @@ export function ReportForm({ turnstileSiteKey }: { turnstileSiteKey?: string }) 
             </select>
           </Field>
           <div className="grid gap-4 sm:grid-cols-3">
-            <Field label="NAFDAC Reg. No." htmlFor="nafdacRegNo" optional hint="Leave blank if there is none">
+            <Field
+              label="NAFDAC Reg. No."
+              htmlFor="nafdacRegNo"
+              optional
+              hint={
+                <>
+                  Leave blank if there is none.{" "}
+                  <a href={NAFDAC.greenbook} target="_blank" rel="noreferrer" className="text-brand-700 underline">
+                    Check it on Greenbook
+                  </a>
+                </>
+              }
+            >
               <input id="nafdacRegNo" name="nafdacRegNo" className="input" placeholder="e.g. A4-1234" />
             </Field>
             <Field label="Batch / lot no." htmlFor="batchNo" optional>

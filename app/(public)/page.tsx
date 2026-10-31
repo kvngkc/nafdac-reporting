@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { NAFDAC } from "@/lib/nafdac";
 import { prisma } from "@/lib/db";
 import { countBy, sinceDate } from "@/lib/analytics";
 import { CATEGORY_LABELS } from "@/lib/labels";
@@ -61,6 +62,21 @@ export default async function Home() {
               <p className="mt-1 text-sm text-slate-600">{w.body}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-5xl px-4 pb-12">
+        <div className="card flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="max-w-xl">
+            <h2 className="text-lg font-bold">Not sure if a product is genuine?</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Search its name or NAFDAC number on NAFDAC&apos;s official Greenbook register before you buy or use it.
+              If it isn&apos;t listed, or the details don&apos;t match the pack, report it here.
+            </p>
+          </div>
+          <a href={NAFDAC.greenbook} target="_blank" rel="noreferrer" className="btn-secondary shrink-0">
+            Search NAFDAC Greenbook
+          </a>
         </div>
       </section>
 
