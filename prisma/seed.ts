@@ -88,6 +88,11 @@ async function main() {
     console.log("Skipping demo complaints (set SEED_DEMO_DATA=true to add them).");
     return;
   }
+  // Fictional complaints must never reach a live site, even if the flag is left on.
+  if (process.env.VERCEL_ENV === "production") {
+    console.log("Skipping demo complaints in production.");
+    return;
+  }
   if ((await prisma.complaint.count()) > 0) {
     console.log("Complaints already exist; not adding demo data.");
     return;
